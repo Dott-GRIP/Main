@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class BoardManager : MonoBehaviour
@@ -8,6 +9,8 @@ public class BoardManager : MonoBehaviour
     public GameObject tileParent;
     public GameObject lightParent;
     public GameObject darkParent;
+
+    List<GameObject> activePieces;
 
     [Space]
     [Header("Input")]
@@ -24,16 +27,16 @@ public class BoardManager : MonoBehaviour
     public Material lightMat;
     public Material darkMat;
 
-    [Space]
-    public bool hasSelection;
+    bool hasSelection;
 
     [Space]
     public Quaternion orientation = Quaternion.Euler(0, 180, 0);
 
     [Space]
     [Header("Vectors")]
-    public Vector2 currentHover = new Vector2(-1, -1);
-    public Vector2 selection = new Vector2(-1, -1);
+    Vector2 currentHover = new Vector2(-1, -1);
+    Vector2 selection = new Vector2(-1, -1);
+    Vector2[] possibleMoves = new Vector2[] { new Vector2(-1, -1) };
 
     private void Start()
     {
@@ -145,6 +148,7 @@ public class BoardManager : MonoBehaviour
             temp.transform.rotation = Quaternion.identity;
             temp.transform.SetParent(lightParent.transform);
         }
+        activePieces.Add(temp);
     }
 
     public void UpdateSelection()
@@ -161,8 +165,86 @@ public class BoardManager : MonoBehaviour
         }
     }
 
-    public void MovePiece(GameObject piece, Vector2 position)
+    public void ShowAvailableMoves(GameObject piece)
     {
+    }
 
+    public void ConfigureAvailableMoves(GameObject piece)
+    {
+        ChessPiece cps = piece.GetComponent<ChessPiece>(); //Chess Piece Script
+
+        int x = (int)piece.transform.position.x;
+        int y = (int)piece.transform.position.y;
+
+        List<Vector2> l = new List<Vector2>();
+
+        switch (cps.m_PieceType)
+        {
+            case PieceType.Pawn:
+                if (cps.colorId == 0)
+                {
+                    l.Add(new Vector2(x, y + 1));
+                    if (cps.hasMoved)
+                    {
+                        l.Add(new Vector2(x, 3));
+                    }
+                }
+                else
+                {
+                    l.Add(new Vector2(x, y - 1));
+                    if (cps.hasMoved)
+                    {
+                        l.Add(new Vector2(x, 4));
+                    }
+                }
+                break;
+            case PieceType.Rook:
+                List<float> xVals = new List<float>();
+                List<float> yVals = new List<float>();
+
+                for (int a = 0; a < 8; a++)
+                {
+                    if (a + 0.5f != x)
+                    {
+                        xVals.Add(a + 0.5f);
+                    }
+                }
+                for (int b = 0; b < 8; b++)
+                {
+                    if (b + 0.5f != y)
+                    {
+                        yVals.Add(b + 0.5f);
+                    }
+                }
+                for (int i = 0; i < xVals.ToArray().Length; i++)
+                {
+                    l.Add(new Vector2(xVals[i], y));
+                }
+                for (int i = 0; i < yVals.ToArray().Length; i++)
+                {
+                    l.Add(new Vector2(x, yVals[i]));
+                }
+                break;
+            case PieceType.Knight:
+                break;
+            case PieceType.Bishop:
+                break;
+            case PieceType.Queen:
+                break;
+            case PieceType.King:
+                break;
+        }
+    }
+
+    public bool IsOccupied(Vector2 pos)
+    {
+        for (int i = 0; i < activePieces.ToArray().Length; i++)
+        {
+            if (pos.x == activePieces[i].transform.position.x && pos.y == activePieces[i].transform.position.z)
+            {
+                return true;
+            }
+        }
+        return false;
     }
 }

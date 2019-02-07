@@ -9,8 +9,10 @@ public class BoardManager : MonoBehaviour
     public GameObject tileParent;
     public GameObject lightParent;
     public GameObject darkParent;
+    public GameObject selectionPrefab;
 
-    List<GameObject> activePieces;
+    public List<GameObject> activePieces = new List<GameObject>();
+    List<GameObject> selectTiles = new List<GameObject>();
 
     [Space]
     [Header("Input")]
@@ -55,6 +57,7 @@ public class BoardManager : MonoBehaviour
                 {
                     selection = currentHover;
                     hasSelection = true;
+                    Debug.Log("> selected");
                 }
             }
         }
@@ -64,10 +67,36 @@ public class BoardManager : MonoBehaviour
             {
                 selection = new Vector2(-1, -1);
                 hasSelection = false;
+                for (int i = 0; i < selectTiles.ToArray().Length; i++)
+                {
+                    Destroy(selectTiles[i]);
+                }
+                Debug.Log("> deselected");
             }
             else if (Input.GetKeyDown(movePiece))
             {
 
+            }
+            else
+            {
+                GameObject[] pcs = activePieces.ToArray();
+                GameObject piece = null;
+                for (int i = 0; i < pcs.Length; i++)
+                {
+                    if (selection.x == pcs[i].transform.position.x && selection.y == pcs[i].transform.position.z)
+                    {
+                        piece = pcs[i];
+                        break;
+                    }
+                }
+                if (piece != null)
+                {
+                    ShowAvailableMoves(piece);
+                }
+                else
+                {
+                    Debug.Log("> null");
+                }
             }
         }
     }
@@ -137,6 +166,7 @@ public class BoardManager : MonoBehaviour
     public void CreatePiece(int index, int x, int y)
     {
         GameObject temp = Instantiate(prefabs[index]);
+        activePieces.Add(temp);
         temp.transform.position = new Vector3(x + tileOffset, 0.1f, y + tileOffset);
         if (index >= 6)
         {
@@ -148,7 +178,6 @@ public class BoardManager : MonoBehaviour
             temp.transform.rotation = Quaternion.identity;
             temp.transform.SetParent(lightParent.transform);
         }
-        activePieces.Add(temp);
     }
 
     public void UpdateSelection()
@@ -157,7 +186,7 @@ public class BoardManager : MonoBehaviour
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity))
         {
             Vector3 hitpoint = new Vector3((int)hit.point.x, (int)hit.point.y, (int)hit.point.z);
-            currentHover = new Vector2((int)hit.point.x, (int)hit.point.z);
+            currentHover = new Vector2((int)hit.point.x + tileOffset, (int)hit.point.z + tileOffset);
         }
         else
         {
@@ -167,6 +196,20 @@ public class BoardManager : MonoBehaviour
 
     public void ShowAvailableMoves(GameObject piece)
     {
+        ConfigureAvailableMoves(piece);
+
+        for (int i = 0; i < selectTiles.ToArray().Length; i++)
+        {
+            Destroy(selectTiles[i]);
+        }
+        selectTiles = new List<GameObject>();
+        for (int i = 0; i < possibleMoves.Length; i++)
+        {
+            GameObject tmp = Instantiate(selectionPrefab);
+            tmp.transform.position = new Vector3(possibleMoves[i].x, 0.15f, possibleMoves[i].y);
+            tmp.transform.rotation = Quaternion.identity;
+            selectTiles.Add(tmp);
+        }
     }
 
     public void ConfigureAvailableMoves(GameObject piece)
@@ -174,7 +217,7 @@ public class BoardManager : MonoBehaviour
         ChessPiece cps = piece.GetComponent<ChessPiece>(); //Chess Piece Script
 
         int x = (int)piece.transform.position.x;
-        int y = (int)piece.transform.position.y;
+        int y = (int)piece.transform.position.z;
 
         List<Vector2> l = new List<Vector2>();
 
@@ -183,7 +226,7 @@ public class BoardManager : MonoBehaviour
             case PieceType.Pawn:
                 if (cps.colorId == 0)
                 {
-                    l.Add(new Vector2(x, y + 1));
+                    l.Add(new Vector2(x + tileOffset, y + 1 + tileOffset));
                     if (cps.hasMoved)
                     {
                         l.Add(new Vector2(x, 3));
@@ -191,7 +234,7 @@ public class BoardManager : MonoBehaviour
                 }
                 else
                 {
-                    l.Add(new Vector2(x, y - 1));
+                    l.Add(new Vector2(x + tileOffset, y - 1 + tileOffset));
                     if (cps.hasMoved)
                     {
                         l.Add(new Vector2(x, 4));
@@ -202,30 +245,52 @@ public class BoardManager : MonoBehaviour
                 List<float> xVals = new List<float>();
                 List<float> yVals = new List<float>();
 
-                for (int a = 0; a < 8; a++)
+                for (int a = 0; a < 7; a++)
                 {
-                    if (a + 0.5f != x)
+                    if (a + tileOffset != x)
                     {
-                        xVals.Add(a + 0.5f);
+                        if (x > 4)
+                        {
+                            xVals.Add(a + tileOffset);
+                        }
+                        else
+                        {
+                            xVals.Add(a - tileOffset);
+                        }
                     }
                 }
-                for (int b = 0; b < 8; b++)
+                for (int b = 0; b < 7; b++)
                 {
-                    if (b + 0.5f != y)
+                    if (b + tileOffset != y)
                     {
-                        yVals.Add(b + 0.5f);
+                        if (x > 4)
+                        {
+                            yVals.Add(b + tileOffset);
+                        }
+                        else
+                        {
+                            yVals.Add(b - tileOffset);
+                        }
                     }
                 }
                 for (int i = 0; i < xVals.ToArray().Length; i++)
                 {
-                    l.Add(new Vector2(xVals[i], y));
+                    l.Add(new Vector2(xVals[i], y + tileOffset));
                 }
                 for (int i = 0; i < yVals.ToArray().Length; i++)
                 {
-                    l.Add(new Vector2(x, yVals[i]));
+                    l.Add(new Vector2(x + tileOffset, yVals[i]));
                 }
                 break;
             case PieceType.Knight:
+                l.Add(new Vector2(x - 2, y - 1));
+                l.Add(new Vector2(x - 2, y + 1));
+                l.Add(new Vector2(x - 1, y - 2));
+                l.Add(new Vector2(x - 1, y + 2));
+                l.Add(new Vector2(x + 1, y - 2));
+                l.Add(new Vector2(x + 1, y + 2));
+                l.Add(new Vector2(x + 2, y - 1));
+                l.Add(new Vector2(x + 2, y + 1));
                 break;
             case PieceType.Bishop:
                 break;
@@ -233,6 +298,16 @@ public class BoardManager : MonoBehaviour
                 break;
             case PieceType.King:
                 break;
+        }
+        possibleMoves = l.ToArray();
+
+        if (cps.m_PieceType == PieceType.Knight)
+        {
+            for (int i = 0; i < possibleMoves.Length; i++)
+            {
+                possibleMoves[i].x += tileOffset;
+                possibleMoves[i].y += tileOffset;
+            }
         }
     }
 

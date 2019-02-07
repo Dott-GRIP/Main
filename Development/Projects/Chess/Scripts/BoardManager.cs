@@ -4,7 +4,23 @@ using UnityEngine;
 public class BoardManager : MonoBehaviour
 {
     [Header("Game Objects")]
-    public GameObject[] prefabs;
+    /*
+        light-
+            -pawn
+            -rook
+            -knight
+            -bishop
+            -queen
+            -king
+        dark-
+            -pawn
+            -rook
+            -knight
+            -bishop
+            -queen
+            -king
+    */
+    public GameObject[] prefabs; //<!> REQUIRED TO BE IN ORDER <!>
     public GameObject tilePrefab;
     public GameObject tileParent;
     public GameObject lightParent;
@@ -191,6 +207,8 @@ public class BoardManager : MonoBehaviour
         GameObject temp = Instantiate(prefabs[index]);
         activePieces.Add(temp);
         temp.transform.position = new Vector3(x + tileOffset, 0.1f, y + tileOffset);
+
+        //if the 'index' (prefab id) is greater than six then the piece is guaranteed to be dark (based on manual input)
         if (index >= 6)
         {
             temp.transform.rotation = orientation;
@@ -206,12 +224,12 @@ public class BoardManager : MonoBehaviour
     public void UpdateSelection()
     {
         RaycastHit hit;
-        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity))
+        if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, Mathf.Infinity)) //if the mouse is hovering over any tile:
         {
             Vector3 hitpoint = new Vector3((int)hit.point.x, (int)hit.point.y, (int)hit.point.z);
             currentHover = new Vector2((int)hit.point.x + tileOffset, (int)hit.point.z + tileOffset);
         }
-        else
+        else //the mouse is not, so set the currentHover variable to null, or in this case (-1, -1) because vectors can't contain 'null' values.
         {
             currentHover = new Vector2(-1, -1);
         }
@@ -219,13 +237,10 @@ public class BoardManager : MonoBehaviour
 
     public void ShowAvailableMoves(GameObject piece)
     {
-        ConfigureAvailableMoves(piece);
+        ConfigureAvailableMoves(piece); //find all possible moves, and add them to the 'possibleMoves' array.
 
-        for (int i = 0; i < selectTiles.ToArray().Length; i++)
-        {
-            Destroy(selectTiles[i]);
-        }
-        selectTiles = new List<GameObject>();
+        DestroySelectionTiles();
+        selectTiles = new List<GameObject>(); //reset 'selectTiles' variable
         for (int i = 0; i < possibleMoves.Length; i++)
         {
             GameObject tmp = Instantiate(selectionPrefab);
@@ -316,15 +331,43 @@ public class BoardManager : MonoBehaviour
                 l.Add(new Vector2(x + 2, y + 1));
                 break;
             case PieceType.Bishop:
+                for (int i = 0; i < 7; i++)
+                {
+                    l.Add(new Vector2(x + i, y + i));
+                    l.Add(new Vector2(x + i, y - i));
+                    l.Add(new Vector2(x - i, y + i));
+                    l.Add(new Vector2(x - i, y - i));
+                }
+                l.Remove(new Vector2(x, y));
                 break;
             case PieceType.Queen:
                 break;
             case PieceType.King:
                 break;
         }
+
+        //remove 'out-of-bounds' moves
+        for (int i = 0; i < l.ToArray().Length; i++)
+        {
+            if (!IsInBounds(l[i]))
+            {
+                l.Remove(l[i]);
+            }
+        }
+
+        //remove occupied moves, unless the occupant can be killed by doing said move.
+        for (int i = 0; i < l.ToArray().Length; i++)
+        {
+            GameObject occupant = GetOccupant(l[i]);
+            if (occupant != null && piece.GetComponent<ChessPiece>().colorId == occupant.GetComponent<ChessPiece>().colorId)
+            {
+                l.Remove(l[i]);
+            }
+        }
+
         possibleMoves = l.ToArray();
 
-        if (cps.m_PieceType == PieceType.Knight)
+        if (cps.m_PieceType == PieceType.Knight || cps.m_PieceType == PieceType.Bishop)
         {
             for (int i = 0; i < possibleMoves.Length; i++)
             {
@@ -332,6 +375,18 @@ public class BoardManager : MonoBehaviour
                 possibleMoves[i].y += tileOffset;
             }
         }
+    }
+
+    public GameObject GetOccupant(Vector2 pos)
+    {
+        for (int i = 0; i < activePieces.ToArray().Length; i++)
+        {
+            if (activePieces[i].transform.position.x == pos.x && activePieces[i].transform.position.y == pos.y)
+            {
+                return activePieces[i];
+            }
+        }
+        return null;
     }
 
     public bool IsOccupied(Vector2 pos)
@@ -343,6 +398,13 @@ public class BoardManager : MonoBehaviour
                 return true;
             }
         }
+        return false;
+    }
+
+    public bool IsInBounds(Vector2 pos)
+    {
+        if (pos.x >= 0 || pos.x >= tileSize * 8 || pos.y <= 0 || pos.y >= tileSize * 8)
+            return true;
         return false;
     }
 

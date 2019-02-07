@@ -49,6 +49,18 @@ public class BoardManager : MonoBehaviour
     private void Update()
     {
         UpdateSelection();
+        GameObject piece = null;
+
+        //set 'piece'to the active selection
+        for (int i = 0; i < activePieces.ToArray().Length; i++)
+        {
+            if (selection.x == activePieces[i].transform.position.x && selection.y == activePieces[i].transform.position.z)
+            {
+                piece = activePieces[i];
+                break;
+            }
+        }
+
         if (!hasSelection)
         {
             if (Input.GetKeyDown(select))
@@ -67,28 +79,39 @@ public class BoardManager : MonoBehaviour
             {
                 selection = new Vector2(-1, -1);
                 hasSelection = false;
-                for (int i = 0; i < selectTiles.ToArray().Length; i++)
-                {
-                    Destroy(selectTiles[i]);
-                }
+                DestroySelectionTiles();
                 Debug.Log("> deselected");
             }
             else if (Input.GetKeyDown(movePiece))
             {
+                if (piece != null) //null-check
+                {
+                    for (int i = 0; i < possibleMoves.Length; i++) //for every possible move,
+                    {
+                        if (currentHover.x == possibleMoves[i].x && currentHover.y == possibleMoves[i].y && !IsOccupied(currentHover)) //if the hovered space is not occupied
+                        {
+                            if (piece.GetComponent<ChessPiece>().colorId == 0) //if the current piece is light
+                            {
+                                Vector3 current = new Vector3(currentHover.x - piece.transform.position.x, 0, currentHover.y - piece.transform.position.z);
+                                piece.transform.Translate(current);
+                            }
+                            else //the current piece is dark
+                            {
+                                Vector3 current = new Vector3(piece.transform.position.x - currentHover.x, 0, piece.transform.position.z - currentHover.y);
+                                piece.transform.Translate(current);
+                            }
 
+                            //deselect piece
+                            hasSelection = false;
+                            DestroySelectionTiles();
+                            Debug.Log("> deselected");
+                            break;
+                        }
+                    }
+                }
             }
             else
             {
-                GameObject[] pcs = activePieces.ToArray();
-                GameObject piece = null;
-                for (int i = 0; i < pcs.Length; i++)
-                {
-                    if (selection.x == pcs[i].transform.position.x && selection.y == pcs[i].transform.position.z)
-                    {
-                        piece = pcs[i];
-                        break;
-                    }
-                }
                 if (piece != null)
                 {
                     ShowAvailableMoves(piece);
@@ -108,7 +131,7 @@ public class BoardManager : MonoBehaviour
             for (int y = 0; y < 8 * tileSize; y++)
             {
                 GameObject newTile = Instantiate(tilePrefab, new Vector3(x + tileOffset, 0, y + tileOffset), Quaternion.identity, tileParent.transform);
-                if ((x + y) % 2 == 0)
+                if ((x + y) % 2 == 0) //if 'x + y' is evenly divisible by 2 (an even number)
                 {
                     newTile.GetComponent<MeshRenderer>().material = darkMat;
                 }
@@ -321,5 +344,13 @@ public class BoardManager : MonoBehaviour
             }
         }
         return false;
+    }
+
+    public void DestroySelectionTiles()
+    {
+        for (int j = 0; j < selectTiles.ToArray().Length; j++)
+        {
+            Destroy(selectTiles[j]);
+        }
     }
 }

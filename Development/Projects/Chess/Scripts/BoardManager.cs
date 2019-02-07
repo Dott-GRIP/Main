@@ -255,7 +255,7 @@ public class BoardManager : MonoBehaviour
                         }
                         else
                         {
-                            xVals.Add(a - tileOffset);
+                            xVals.Add(a + 1 + tileOffset);
                         }
                     }
                 }
@@ -263,13 +263,13 @@ public class BoardManager : MonoBehaviour
                 {
                     if (b + tileOffset != y)
                     {
-                        if (x > 4)
+                        if (y > 4)
                         {
                             yVals.Add(b + tileOffset);
                         }
                         else
                         {
-                            yVals.Add(b - tileOffset);
+                            yVals.Add(b + 1 + tileOffset);
                         }
                     }
                 }

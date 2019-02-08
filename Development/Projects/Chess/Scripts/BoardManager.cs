@@ -116,6 +116,7 @@ public class BoardManager : MonoBehaviour
                                 Vector3 current = new Vector3(piece.transform.position.x - currentHover.x, 0, piece.transform.position.z - currentHover.y);
                                 piece.transform.Translate(current);
                             }
+                            piece.GetComponent<ChessPiece>().hasMoved = true;
 
                             //deselect piece
                             hasSelection = false;
@@ -265,60 +266,32 @@ public class BoardManager : MonoBehaviour
                 if (cps.colorId == 0)
                 {
                     l.Add(new Vector2(x + tileOffset, y + 1 + tileOffset));
-                    if (cps.hasMoved)
+                    if (!cps.hasMoved)
                     {
-                        l.Add(new Vector2(x, 3));
+                        l.Add(new Vector2(x + tileOffset, 3 + tileOffset));
                     }
                 }
                 else
                 {
                     l.Add(new Vector2(x + tileOffset, y - 1 + tileOffset));
-                    if (cps.hasMoved)
+                    if (!cps.hasMoved)
                     {
-                        l.Add(new Vector2(x, 4));
+                        l.Add(new Vector2(x + tileOffset, 5 - tileOffset));
                     }
                 }
                 break;
             case PieceType.Rook:
-                List<float> xVals = new List<float>();
-                List<float> yVals = new List<float>();
-
-                for (int a = 0; a < 7; a++)
+                /* [[ BROKEN ]]
+                for (int i = 0; i < y; i++)
                 {
-                    if (a + tileOffset != x)
-                    {
-                        if (x > 4)
-                        {
-                            xVals.Add(a + tileOffset);
-                        }
-                        else
-                        {
-                            xVals.Add(a + 1 + tileOffset);
-                        }
-                    }
+                    l.Add(new Vector2(x + tileOffset, i + tileOffset));
                 }
-                for (int b = 0; b < 7; b++)
+                for (int i = 0; i < x; i++)
                 {
-                    if (b + tileOffset != y)
-                    {
-                        if (y > 4)
-                        {
-                            yVals.Add(b + tileOffset);
-                        }
-                        else
-                        {
-                            yVals.Add(b + 1 + tileOffset);
-                        }
-                    }
+                    l.Add(new Vector2(i + tileOffset, y + tileOffset));
                 }
-                for (int i = 0; i < xVals.ToArray().Length; i++)
-                {
-                    l.Add(new Vector2(xVals[i], y + tileOffset));
-                }
-                for (int i = 0; i < yVals.ToArray().Length; i++)
-                {
-                    l.Add(new Vector2(x + tileOffset, yVals[i]));
-                }
+                l.Remove(new Vector2(x + tileOffset, y + tileOffset));
+                */
                 break;
             case PieceType.Knight:
                 l.Add(new Vector2(x - 2, y - 1));
@@ -403,7 +376,7 @@ public class BoardManager : MonoBehaviour
 
     public bool IsInBounds(Vector2 pos)
     {
-        if (pos.x >= 0 || pos.x >= tileSize * 8 || pos.y <= 0 || pos.y >= tileSize * 8)
+        if (pos.x >= 0 && pos.x <= tileSize * 8 && pos.y >= 0 && pos.y <= tileSize * 8)
             return true;
         return false;
     }
